@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>صندوق الوارد | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --accent: #ff0050;
+            --border: #2c2c2c;
+            --radius: 1rem;
+            --chat-bg: #1e1e1e;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+            --chat-bg: #f9f9f9;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+        .header h2 { flex: 1; font-size: 18px; }
+        .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+
+        .search-bar { padding: 8px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); display: none; }
+        .search-bar input {
+            width: 100%; padding: 10px 16px; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: 25px;
+            color: var(--text-primary); font-family: 'Cairo', sans-serif; font-size: 14px; outline: none;
+        }
+
+        .tabs-scroll { overflow-x: auto; white-space: nowrap; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .tabs-scroll::-webkit-scrollbar { display: none; }
+        .tabs-row { display: flex; gap: 12px; padding: 0 8px; }
+        .tab {
+            display: inline-block; padding: 12px 18px; cursor: pointer;
+            color: var(--text-secondary); border-bottom: 2px solid transparent;
+            font-weight: 600; font-size: 14px; transition: 0.2s; position: relative;
+        }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab .badge {
+            position: absolute; top: 4px; right: -2px;
+            background: var(--accent); color: white; font-size: 10px;
+            min-width: 18px; height: 18px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            display: none;
+        }
+        .tab .badge.visible { display: flex; }
+
+        .list-container { max-width: 600px; margin: 0 auto; padding: 8px; }
+        .list-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            background: var(--bg-card); border-radius: 12px; margin-bottom: 8px;
+            cursor: pointer; border: 1px solid var(--border);
+        }
+        .list-item-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-input); }
+        .list-item-info { flex: 1; }
+        .list-item-name { font-weight: 700; }
+        .list-item-preview { font-size: 12px; color: var(--text-muted); }
+        .list-item-time { font-size: 10px; color: var(--text-muted); }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+
+        .chat-sheet {
+            position: fixed; bottom: -100%; left: 0; right: 0; height: 85%; max-width: 600px; margin: 0 auto;
+            background: var(--chat-bg); border-radius: 25px 25px 0 0; z-index: 2000;
+            display: flex; flex-direction: column; transition: bottom 0.3s;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        .chat-sheet.open { bottom: 0; }
+        .chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--bg-card); }
+        .chat-header .close-btn { margin-right: auto; background: none; border: none; color: var(--text-primary); font-size: 20px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; }
+        .msg-row { display: flex; margin-bottom: 12px; align-items: flex-end; gap: 6px; }
+        .msg-row.own { justify-content: flex-end; }
+        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .msg-bubble {
+            max-width: 75%; padding: 10px 14px; border-radius: 18px;
+            word-wrap: break-word; font-size: 14px; position: relative;
+        }
+        .msg-sent { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+        .msg-received { background: var(--bg-card); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .msg-attachment { max-width: 200px; border-radius: 12px; margin-top: 6px; }
+        .msg-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+        .msg-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .msg-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; }
+        .msg-actions button.liked { color: var(--accent); }
+        .reply-preview { font-size: 11px; color: var(--text-muted); border-right: 2px solid var(--accent); padding-right: 8px; margin-bottom: 4px; }
+        .edit-input { width: 100%; background: var(--bg-input); border: 1px solid var(--accent); border-radius: 12px; padding: 6px 12px; color: var(--text-primary); font-family: 'Cairo'; }
+
+        .chat-input-area { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; position: relative; background: var(--bg-card); }
+        .chat-input-area input { flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: 25px; padding: 10px 16px; color: var(--text-primary); font-family: 'Cairo'; }
+        .chat-input-area button { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; padding: 6px; }
+        .send-btn { background: var(--accent) !important; color: white !important; border-radius: 25px !important; padding: 10px 20px !important; font-size: 16px !important; }
+
+        .emoji-picker {
+            position: absolute; bottom: 60px; right: 10px; background: var(--bg-card); border-radius: 15px;
+            padding: 10px; width: 280px; max-height: 200px; overflow-y: auto; display: none; flex-wrap: wrap; gap: 4px;
+            z-index: 2200; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); border: 1px solid var(--border);
+        }
+        .emoji-picker.active { display: flex; }
+        .emoji-option { font-size: 24px; cursor: pointer; padding: 6px; border-radius: 8px; }
+        .emoji-option:hover { background: var(--bg-input); }
+
+        .bottom-footer {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            border-top: 1px solid var(--border); z-index: 100; max-width: 600px; margin: 0 auto;
+        }
+        .footer-button {
+            background: none; border: none; text-align: center; cursor: pointer;
+            color: var(--text-secondary); text-decoration: none; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .footer-button .icon { font-size: 22px; }
+        .footer-button .label { font-size: 11px; font-weight: 600; }
+        .footer-button.create-btn .icon { font-size: 28px; color: var(--accent); }
+
+        #hiddenFileInput { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="icon-btn" onclick="history.back()"><i class="fas fa-arrow-right"></i></button>
+    <h2>صندوق الوارد</h2>
+    <button class="icon-btn" id="searchToggleBtn"><i class="fas fa-search"></i></button>
+    <button class="icon-btn" id="headerActionBtn" style="display:none"><i class="fas fa-plus"></i></button>
+</div>
+
+<div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="ابحث في المحادثات والمجموعات...">
+</div>
+
+<div class="tabs-scroll">
+    <div class="tabs-row" id="tabsRow">
+        <div class="tab active" data-tab="chats">المحادثات <span class="badge" id="badge-chats"></span></div>
+        <div class="tab" data-tab="message_requests">طلبات المراسلة <span class="badge" id="badge-requests"></span></div>
+        <div class="tab" data-tab="activity">النشاط <span class="badge" id="badge-activity"></span></div>
+        <div class="tab" data-tab="notifications">الإشعارات <span class="badge" id="badge-notifications"></span></div>
+        <div class="tab" data-tab="system">تحديثات النظام <span class="badge" id="badge-system"></span></div>
+        <div class="tab" data-tab="new_followers">متابعون جدد <span class="badge" id="badge-followers"></span></div>
+        <div class="tab" data-tab="groups">المجموعات <span class="badge" id="badge-groups"></span></div>
+    </div>
+</div>
+
+<div class="list-container" id="listContainer">
+    <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>
+</div>
+
+<div class="chat-sheet" id="chatSheet">
+    <div class="chat-header">
+        <img id="chatAvatar" src="" width="40" height="40" style="border-radius:50%">
+        <strong id="chatName"></strong>
+        <button class="close-btn" onclick="closeChat()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+        <button id="emojiBtn"><i class="far fa-smile-wink"></i></button>
+        <button id="attachBtn"><i class="fas fa-paperclip"></i></button>
+        <input type="text" id="messageInput" placeholder="اكتب رسالة...">
+        <button class="send-btn" onclick="sendMessage()">إرسال</button>
+        <div class="emoji-picker" id="emojiPicker"></div>
+    </div>
+    <input type="file" id="hiddenFileInput" accept="image/*" onchange="uploadAttachment()">
+</div>
+
+<div class="bottom-footer">
+    <a href="home.html" class="footer-button"><i class="fas fa-home icon"></i><div class="label">الصفحة الرئيسية</div></a>
+    <a href="explore.html" class="footer-button"><i class="fas fa-compass icon"></i><div class="label">استكشاف</div></a>
+    <a href="create-post.html" class="footer-button create-btn"><i class="fas fa-plus-circle icon"></i><div class="label">إنشاء</div></a>
+    <a href="inbox.html" class="footer-button" style="color:var(--accent)"><i class="fas fa-inbox icon"></i><div class="label">صندوق الوارد</div></a>
+    <a href="profile.html" class="footer-button"><i class="fas fa-user icon"></i><div class="label">الملف الشخصي</div></a>
+</div>
+
+<script>
+    const currentUser = getCurrentUser();
+    if (!currentUser) window.location.href = 'login.html';
+
+    let activeTab = 'chats';
+    let activeChatId = null;
+    let activeChatType = null;
+    let messageSubscription = null;
+    let originalData = [];
+    let selectedAttachment = null;
+    let replyTo = null;
+
+    // ---------- التبويبات ----------
+    function switchTab(tabName) {
+        activeTab = tabName;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const targetTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
+        if (targetTab) targetTab.classList.add('active');
+        const actionBtn = document.getElementById('headerActionBtn');
+        actionBtn.style.display = (tabName === 'chats' || tabName === 'groups') ? 'inline-block' : 'none';
+        document.getElementById('searchBar').style.display = 'none';
+        document.getElementById('searchInput').value = '';
+        loadTabContent(tabName);
+    }
+
+    document.getElementById('tabsRow').addEventListener('click', (e) => {
+        const tab = e.target.closest('.tab');
+        if (!tab) return;
+        switchTab(tab.dataset.tab);
+    });
+
+    document.getElementById('headerActionBtn').addEventListener('click', () => {
+        if (activeTab === 'chats') startNewConversation();
+        else if (activeTab === 'groups') createNewGroup();
+    });
+
+    document.getElementById('searchToggleBtn').addEventListener('click', () => {
+        const searchBar = document.getElementById('searchBar');
+        const input = document.getElementById('searchInput');
+        if (searchBar.style.display === 'none' || searchBar.style.display === '') {
+            searchBar.style.display = 'block';
+            input.focus();
+        } else {
+            searchBar.style.display = 'none';
+            input.value = '';
+            filterList('');
+        }
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => filterList(e.target.value.trim()));
+
+    function filterList(query) {
+        if (!originalData.length) return;
+        const filtered = originalData.filter(item => (item.name + ' ' + item.preview).toLowerCase().includes(query.toLowerCase()));
+        renderFilteredItems(filtered);
+    }
+
+    function renderFilteredItems(items) {
+        const container = document.getElementById('listContainer');
+        container.innerHTML = items.length ? items.map(i => i.html).join('') : '<div class="empty-state">لا توجد نتائج</div>';
+    }
+
+    // ---------- تحميل المحتوى حسب التبويب ----------
+    async function loadTabContent(tab) {
+        const container = document.getElementById('listContainer');
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>';
+        originalData = [];
+        switch(tab) {
+            case 'chats': await loadConversations(container); break;
+            case 'message_requests': await loadMessageRequests(container); break;
+            case 'activity': await loadActivity(container); break;
+            case 'notifications': await loadNotifications(container); break;
+            case 'system': await loadSystemNotifications(container); break;
+            case 'new_followers': await loadNewFollowers(container); break;
+            case 'groups': await loadGroups(container); break;
+        }
+    }
+
+    async function loadConversations(container) {
+        const { data: parts } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', currentUser.id);
+        if (!parts?.length) { container.innerHTML = '<div class="empty-state">لا توجد محادثات</div>'; return; }
+        const items = await Promise.all(parts.map(async p => {
+            const { data: others } = await supabase.from('conversation_participants').select('user:user_id (id, username, avatar)').eq('conversation_id', p.conversation_id).neq('user_id', currentUser.id);
+            const other = others?.[0]?.user; if (!other) return null;
+            const { data: lastMsg } = await supabase.from('messages').select('text, created_at').eq('conversation_id', p.conversation_id).order('created_at', { ascending: false }).limit(1).single();
+            const html = `<div class="list-item" onclick="openChat('${p.conversation_id}','private','${escapeHtml(other.username)}','${other.avatar||''}')"><img class="list-item-avatar" src="${other.avatar||'https://randomuser.me/api/portraits/lego/2.jpg'}"><div class="list-item-info"><div class="list-item-name">${escapeHtml(other.username)}</div><div class="list-item-preview">${lastMsg?.text?.substring(0,30)||'...'}</div></div><div class="list-item-time">${lastMsg?.created_at ? timeAgo(lastMsg.created_at):''}</div></div>`;
+            return { name: other.username, preview: lastMsg?.text || '', html };
+        }));
+        const validItems = items.filter(Boolean);
+        originalData = validItems;
+        container.innerHTML = validItems.map(i => i.html).join('') || '<div class="empty-state">لا توجد محادثات</div>';
+    }
+
+    async function loadMessageRequests(container) {
+        const { data: requests } = await supabase.from('message_requests').select('*, from_user:from_user (id, username, avatar)').eq('to_user', currentUser.id).eq('status', 'pending');
+        if (!requests?.length) { container.innerHTML = '<div class="empty-state">لا توجد طلبات مراسلة</div>'; return; }
+        container.innerHTML = requests.map(r => `
+            <div class="list-item">
+                <img class="list-item-avatar" src="${r.from_user?.avatar || 'https://randomuser.me/api/portraits/lego/2.jpg'}">
+                <div class="list-item-info"><div class="list-item-name">${escapeHtml(r.from_user?.username || 'مستخدم')}</div><div class="list-item-preview">طلب مراسلة</div></div>
+                <button onclick="event.stopPropagation(); acceptRequest('${r.id}')" style="background:var(--accent); border:none; color:white; padding:6px 12px; border-radius:15px; margin-left:4px;">قبول</button>
+                <button onclick="event.stopPropagation(); rejectRequest('${r.id}')" style="background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); padding:6px 12px; border-radius:15px;">رفض</button>
+            </div>
+        `).join('');
+    }
+
+    async function loadActivity(container) {
+        const { data: activities } = await supabase.from('notifications').select('*, actor:actor_id (username)').eq('recipient_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
+        if (!activities?.length) { container.innerHTML = '<div class="empty-state">لا يوجد نشاط</div>'; return; }
+        container.innerHTML = activities.map(a => {
+            let icon = '📌';
+            if (a.type === 'like') icon = '❤️';
+            else if (a.type === 'comment') icon = '💬';
+            else if (a.type === 'follow') icon = '👤';
+            else if (a.type === 'repost') icon = '🔄';
+            return `<div class="list-item" onclick="handleNotificationClick('${a.type}', '${a.post_id||''}')"><div style="font-size:20px;">${icon}</div><div class="list-item-info"><div class="list-item-name">${escapeHtml(a.actor?.username || 'مستخدم')} ${getActivityText(a.type)}</div><div class="list-item-time">${timeAgo(a.created_at)}</div></div></div>`;
+        }).join('');
+    }
+
+    function getActivityText(type) {
+        switch(type) {
+            case 'like': return 'أعجب بمنشورك';
+            case 'comment': return 'علّق على منشورك';
+            case 'follow': return 'تابعك';
+            case 'repost': return 'أعاد نشر منشورك';
+            default: return 'تفاعل معك';
+        }
+    }
+
+    async function loadNotifications(container) {
+        const { data: notifs } = await supabase.from('notifications').select('*, actor:actor_id (username)').eq('recipient_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
+        if (!notifs?.length) { container.innerHTML = '<div class="empty-state">لا توجد إشعارات</div>'; return; }
+        container.innerHTML = notifs.map(n => {
+            let icon = '🔔';
+            if (n.type === 'like') icon = '❤️';
+            else if (n.type === 'comment') icon = '💬';
+            else if (n.type === 'follow') icon = '👤';
+            else if (n.type === 'repost') icon = '🔄';
+            return `<div class="list-item" onclick="handleNotificationClick('${n.type}', '${n.post_id||''}')"><div style="font-size:20px;">${icon}</div><div class="list-item-info"><div class="list-item-name">${escapeHtml(n.actor?.username || 'مستخدم')} ${getActivityText(n.type)}</div><div class="list-item-time">${timeAgo(n.created_at)}</div></div></div>`;
+        }).join('');
+    }
+
+    async function loadSystemNotifications(container) {
+        const { data: sys } = await supabase.from('system_notifications').select('*').order('created_at', { ascending: false }).limit(20);
+        if (!sys?.length) { container.innerHTML = '<div class="empty-state">لا توجد تحديثات</div>'; return; }
+        container.innerHTML = sys.map(s => `
+            <div class="list-item">
+                <div style="font-size:20px;">📢</div>
+                <div class="list-item-info"><div class="list-item-name">${escapeHtml(s.text)}</div><div class="list-item-time">${timeAgo(s.created_at)}</div></div>
+            </div>
+        `).join('');
+    }
+
+    async function loadNewFollowers(container) {
+        const { data: followers } = await supabase.from('follows').select('follower:user_id (id, username, avatar)').eq('following_id', currentUser.id).order('created_at', { ascending: false }).limit(30);
+        if (!followers?.length) { container.innerHTML = '<div class="empty-state">لا يوجد متابعون بعد</div>'; return; }
+        container.innerHTML = followers.map(f => `
+            <div class="list-item" onclick="window.location.href='public-profile.html?user=${f.follower.id}'">
+                <img class="list-item-avatar" src="${f.follower.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}">
+                <div class="list-item-info"><div class="list-item-name">${escapeHtml(f.follower.username)}</div><div class="list-item-preview">بدأ متابعتك</div></div>
+            </div>
+        `).join('');
+    }
+
+    async function loadGroups(container) {
+        const { data: memberships } = await supabase.from('group_members').select('group_id').eq('user_id', currentUser.id);
+        if (!memberships?.length) { container.innerHTML = '<div class="empty-state">لست عضواً في أي مجموعة</div>'; return; }
+        const items = await Promise.all(memberships.map(async m => {
+            const { data: group } = await supabase.from('groups_table').select('*').eq('id', m.group_id).single();
+            if (!group) return null;
+            const html = `<div class="list-item" onclick="openChat('${group.id}','group','${escapeHtml(group.name)}','')"><div class="list-item-avatar" style="background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;">👥</div><div class="list-item-info"><div class="list-item-name">${escapeHtml(group.name)}</div></div></div>`;
+            return { name: group.name, preview: '', html };
+        }));
+        const validItems = items.filter(Boolean);
+        originalData = validItems;
+        container.innerHTML = validItems.map(i => i.html).join('') || '<div class="empty-state">لا توجد مجموعات</div>';
+    }
+
+    // ---------- نافذة المحادثة المطورة ----------
+    window.openChat = async function(chatId, type, name, avatar) {
+        activeChatId = chatId; activeChatType = type;
+        document.getElementById('chatName').textContent = name;
+        document.getElementById('chatAvatar').src = avatar || (type==='group' ? '' : 'https://randomuser.me/api/portraits/lego/2.jpg');
+        document.getElementById('chatAvatar').style.display = avatar ? 'block' : 'none';
+        document.getElementById('chatSheet').classList.add('open');
+        replyTo = null;
+        document.getElementById('messageInput').placeholder = 'اكتب رسالة...';
+        await loadMessages(chatId);
+        subscribeToMessages(chatId);
+    };
+
+    async function loadMessages(chatId) {
+        const table = activeChatType === 'private' ? 'messages' : 'group_messages';
+        const col = activeChatType === 'private' ? 'conversation_id' : 'group_id';
+        const { data: msgs } = await supabase.from(table).select('*').eq(col, chatId).order('created_at', { ascending: true });
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = '';
+        if (!msgs) return;
+        const { data: likes } = await supabase.from('message_likes').select('message_id').eq('user_id', currentUser.id).in('message_id', msgs.map(m => m.id));
+        const likedSet = new Set((likes||[]).map(l => l.message_id));
+        msgs.forEach(m => renderMessage(m, container, likedSet.has(m.id)));
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function renderMessage(msg, container, isLiked = false) {
+        const isOwn = msg.sender_id === currentUser.id;
+        const row = document.createElement('div');
+        row.className = `msg-row ${isOwn ? 'own' : ''}`;
+        row.id = `msg-${msg.id}`;
+
+        let attachmentHtml = '';
+        if (msg.attachment) {
+            const att = Array.isArray(msg.attachment) ? msg.attachment : [msg.attachment];
+            attachmentHtml = att.map(url => `<img src="${url}" class="msg-attachment" onclick="window.open('${url}')">`).join('');
+        }
+
+        const otherAvatar = document.getElementById('chatAvatar').src;
+        const replyPreview = msg.parent_id ? `<div class="reply-preview">↩️ رد على رسالة</div>` : '';
+
+        row.innerHTML = `
+            ${!isOwn ? `<img class="msg-avatar" src="${otherAvatar}">` : ''}
+            <div>
+                ${replyPreview}
+                <div class="msg-bubble ${isOwn ? 'msg-sent' : 'msg-received'}">
+                    ${msg.deleted ? '<i style="color:var(--text-muted);">تم حذف الرسالة</i>' : escapeHtml(msg.text) + attachmentHtml}
+                </div>
+                <div class="msg-time">${new Date(msg.created_at).toLocaleTimeString('ar', { hour:'2-digit', minute:'2-digit' })}${msg.edited ? ' (معدلة)' : ''}</div>
+                <div class="msg-actions">
+                    <button class="like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${msg.id}', this)">❤️ <span class="like-count">${msg.likes||0}</span></button>
+                    <button onclick="replyToMessage('${msg.id}')">↩️</button>
+                    ${isOwn && !msg.deleted ? `
+                        <button onclick="editMessage('${msg.id}')">✏️</button>
+                        <button onclick="deleteMessage('${msg.id}')">🗑️</button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function subscribeToMessages(chatId) {
+        if (messageSubscription) supabase.removeChannel(messageSubscription);
+        const table = activeChatType === 'private' ? 'messages' : 'group_messages';
+        const col = activeChatType === 'private' ? 'conversation_id' : 'group_id';
+        messageSubscription = supabase
+            .channel(`chat-${chatId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter: `${col}=eq.${chatId}` }, payload => {
+                if (payload.new.sender_id !== currentUser.id) renderMessage(payload.new, document.getElementById('chatMessages'));
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table, filter: `${col}=eq.${chatId}` }, payload => {
+                const oldMsg = document.getElementById(`msg-${payload.new.id}`);
+                if (oldMsg) { oldMsg.remove(); renderMessage(payload.new, document.getElementById('chatMessages')); }
+            })
+            .subscribe();
+    }
+
+    window.sendMessage = async function() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if ((!text && !selectedAttachment) || !activeChatId) return;
+        const table = activeChatType === 'private' ? 'messages' : 'group_messages';
+        const col = activeChatType === 'private' ? 'conversation_id' : 'group_id';
+        const payload = { [col]: activeChatId, sender_id: currentUser.id, text: text || '', attachment: selectedAttachment };
+        if (replyTo) payload.parent_id = replyTo;
+        await supabase.from(table).insert(payload);
+        input.value = ''; selectedAttachment = null; document.getElementById('hiddenFileInput').value = '';
+        replyTo = null; document.getElementById('messageInput').placeholder = 'اكتب رسالة...';
+    };
+
+    window.toggleLike = async function(msgId, btn) {
+        const isLiked = btn.classList.contains('liked');
+        const countSpan = btn.querySelector('.like-count');
+        let count = parseInt(countSpan.textContent) || 0;
+        if (isLiked) {
+            await supabase.from('message_likes').delete().eq('message_id', msgId).eq('user_id', currentUser.id);
+            btn.classList.remove('liked'); countSpan.textContent = Math.max(0, count-1);
+        } else {
+            await supabase.from('message_likes').insert({ message_id: msgId, user_id: currentUser.id });
+            btn.classList.add('liked'); countSpan.textContent = count+1;
+        }
+    };
+
+    window.replyToMessage = function(msgId) {
+        replyTo = msgId;
+        document.getElementById('messageInput').placeholder = 'اكتب رداً...';
+        document.getElementById('messageInput').focus();
+    };
+
+    window.editMessage = function(msgId) {
+        const msgDiv = document.getElementById(`msg-${msgId}`);
+        const bubble = msgDiv.querySelector('.msg-bubble');
+        const currentText = bubble.innerText;
+        const input = document.createElement('input');
+        input.className = 'edit-input'; input.value = currentText;
+        bubble.replaceWith(input); input.focus();
+        input.addEventListener('blur', async () => {
+            const newText = input.value.trim();
+            if (newText && newText !== currentText) {
+                const table = activeChatType === 'private' ? 'messages' : 'group_messages';
+                await supabase.from(table).update({ text: newText, edited: true }).eq('id', msgId);
+            }
+            input.replaceWith(bubble);
+        });
+    };
+
+    window.deleteMessage = async function(msgId) {
+        if (!confirm('حذف الرسالة؟')) return;
+        const table = activeChatType === 'private' ? 'messages' : 'group_messages';
+        await supabase.from(table).update({ deleted: true }).eq('id', msgId);
+    };
+
+    // ---------- إيموجي ومرفقات ----------
+    const emojis = ['😀','😂','😍','😢','😡','👍','👎','❤️','🔥','🎉','😎','🤔','😴','🥳','😇','🤗','😤','😱','💔','✨','🌟','💡','📌','📎','📷','🎵','🎤','📞','📍','📋'];
+    function buildEmojiPicker() {
+        const picker = document.getElementById('emojiPicker');
+        picker.innerHTML = '';
+        emojis.forEach(e => {
+            const s = document.createElement('span'); s.className='emoji-option'; s.textContent=e;
+            s.onclick=()=>{ document.getElementById('messageInput').value+=e; picker.classList.remove('active'); };
+            picker.appendChild(s);
+        });
+    }
+    document.getElementById('emojiBtn').onclick = (e) => { e.stopPropagation(); document.getElementById('emojiPicker').classList.toggle('active'); };
+    document.addEventListener('click', (e) => { if (!e.target.closest('#emojiPicker') && !e.target.closest('#emojiBtn')) document.getElementById('emojiPicker').classList.remove('active'); });
+
+    document.getElementById('attachBtn').onclick = () => document.getElementById('hiddenFileInput').click();
+
+    window.uploadAttachment = async function() {
+        const file = document.getElementById('hiddenFileInput').files[0];
+        if (!file) return;
+        const fileName = `chat/${Date.now()}_${file.name}`;
+        const { error } = await supabase.storage.from('ramz-x-images').upload(fileName, file);
+        if (error) { showToast('فشل رفع المرفق: ' + error.message, true); return; }
+        const { data: { publicUrl } } = supabase.storage.from('ramz-x-images').getPublicUrl(fileName);
+        selectedAttachment = [publicUrl];
+        showToast('تم رفع المرفق، اضغط إرسال');
+    };
+
+    // ---------- إغلاق المحادثة ----------
+    window.closeChat = function() {
+        document.getElementById('chatSheet').classList.remove('open');
+        if (messageSubscription) { supabase.removeChannel(messageSubscription); messageSubscription = null; }
+        loadTabContent(activeTab);
+    };
+
+    // ---------- إنشاء محادثة مباشرة ----------
+    window.startNewConversation = async function() {
+        const username = prompt('اسم المستخدم الذي تريد مراسلته:');
+        if (!username) return;
+        const { data: users } = await supabase
+            .from('users')
+            .select('id, username, avatar')
+            .ilike('username', `%${username}%`)
+            .neq('id', currentUser.id)
+            .limit(1);
+        if (!users?.length) return showToast('لم يتم العثور', true);
+        const other = users[0];
+        const { data: conv } = await supabase.from('conversations').insert({}).select().single();
+        const convId = conv.id;
+        await supabase.from('conversation_participants').insert([
+            { conversation_id: convId, user_id: currentUser.id },
+            { conversation_id: convId, user_id: other.id }
+        ]);
+        openChat(convId, 'private', other.username, other.avatar || '');
+        loadTabContent('chats');
+        showToast('تم بدء المحادثة');
+    };
+
+    window.createNewGroup = async function() {
+        const name = prompt('اسم المجموعة:');
+        if (!name) return;
+        const { data: group } = await supabase.from('groups_table').insert({ name, created_by: currentUser.id }).select().single();
+        await supabase.from('group_members').insert({ group_id: group.id, user_id: currentUser.id });
+        alert('تم إنشاء المجموعة');
+        loadTabContent('groups');
+    };
+
+    window.acceptRequest = async function(requestId) {
+        await supabase.from('message_requests').update({ status: 'accepted' }).eq('id', requestId);
+        showToast('تم القبول');
+        loadTabContent('message_requests');
+    };
+
+    window.rejectRequest = async function(requestId) {
+        await supabase.from('message_requests').update({ status: 'rejected' }).eq('id', requestId);
+        showToast('تم الرفض');
+        loadTabContent('message_requests');
+    };
+
+    window.handleNotificationClick = function(type, postId) {
+        if (postId && (type==='like'||type==='comment'||type==='repost')) window.location.href = `home.html?post=${postId}`;
+        else if (type==='follow') window.location.href = 'friends.html';
+    };
+
+    // ---------- بدء التطبيق ----------
+    async function init() {
+        buildEmojiPicker();
+        const { count } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('recipient_id', currentUser.id)
+            .eq('seen', false);
+        const unreadCount = count || 0;
+        const tabsRow = document.getElementById('tabsRow');
+        const notifTab = tabsRow.querySelector('[data-tab="notifications"]');
+        const badge = document.getElementById('badge-notifications');
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+            badge.classList.add('visible');
+            if (tabsRow.firstElementChild !== notifTab) {
+                tabsRow.insertBefore(notifTab, tabsRow.firstElementChild);
+            }
+            switchTab('notifications');
+        } else {
+            badge.classList.remove('visible');
+            switchTab('chats');
+        }
+
+        // فتح محادثة تلقائياً إذا طُلب من رابط خارجي (مثل public-profile.html)
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatIdFromUrl = urlParams.get('chat');
+        const chatTypeFromUrl = urlParams.get('type') || 'private';
+        const chatNameFromUrl = urlParams.get('name') || 'محادثة';
+        if (chatIdFromUrl) {
+            setTimeout(() => {
+                openChat(chatIdFromUrl, chatTypeFromUrl, decodeURIComponent(chatNameFromUrl), '');
+            }, 600);
+        }
+    }
+    init();
+
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') document.body.classList.remove('light');
+    else document.body.classList.add('light');
+</script>
+</body>
+</html>
