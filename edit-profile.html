@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>تعديل الملف الشخصي | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --accent: #ff0050;
+            --border: #2c2c2c;
+            --radius: 1rem;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+        .header h2 { flex: 1; font-size: 18px; }
+        .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+        .form-container { max-width: 600px; margin: 0 auto; padding: 16px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: var(--text-secondary); font-size: 14px; }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+        textarea { min-height: 100px; resize: vertical; }
+        .avatar-upload { text-align: center; margin-bottom: 20px; }
+        .avatar-preview {
+            width: 90px; height: 90px; border-radius: 50%; object-fit: cover;
+            border: 3px solid var(--accent); cursor: pointer;
+        }
+        .social-links { margin-bottom: 20px; }
+        .social-link-item { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+        .social-link-item input { flex: 1; }
+        .social-link-item button { background: var(--accent); border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+        .add-link-btn { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 16px; border-radius: 12px; cursor: pointer; }
+        .save-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            font-family: 'Cairo', sans-serif;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .bottom-footer {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            border-top: 1px solid var(--border); z-index: 100; max-width: 600px; margin: 0 auto;
+        }
+        .footer-button {
+            background: none; border: none; text-align: center; cursor: pointer;
+            color: var(--text-secondary); text-decoration: none; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .footer-button .icon { font-size: 22px; }
+        .footer-button .label { font-size: 11px; font-weight: 600; }
+        .footer-button.create-btn .icon { font-size: 28px; color: var(--accent); }
+    </style>
+</head>
+<body>
+<div class="header">
+    <button class="icon-btn" onclick="history.back()"><i class="fas fa-arrow-right"></i></button>
+    <h2>تعديل الملف الشخصي</h2>
+    <div></div>
+</div>
+
+<div class="form-container">
+    <!-- صورة الملف -->
+    <div class="avatar-upload">
+        <img id="avatarPreview" class="avatar-preview" src="" alt="صورة الملف" onclick="document.getElementById('avatarInput').click()">
+        <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(event)">
+    </div>
+
+    <!-- الاسم و النبذة -->
+    <div class="form-group">
+        <label>اسم المستخدم</label>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+    </div>
+    <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="fullName" placeholder="الاسم الكامل">
+    </div>
+    <div class="form-group">
+        <label>النبذة</label>
+        <textarea id="bio" placeholder="اكتب نبذة عن نفسك..."></textarea>
+    </div>
+
+    <!-- روابط التواصل -->
+    <div class="social-links">
+        <label>روابط التواصل الاجتماعي</label>
+        <div id="linksList"></div>
+        <button class="add-link-btn" onclick="addLinkField()"><i class="fas fa-plus"></i> إضافة رابط</button>
+    </div>
+
+    <button class="save-btn" id="saveBtn">حفظ التغييرات</button>
+</div>
+
+<div class="bottom-footer">
+    <a href="home.html" class="footer-button"><i class="fas fa-home icon"></i><div class="label">الصفحة الرئيسية</div></a>
+    <a href="explore.html" class="footer-button"><i class="fas fa-compass icon"></i><div class="label">استكشاف</div></a>
+    <a href="create-post.html" class="footer-button create-btn"><i class="fas fa-plus-circle icon"></i><div class="label">إنشاء</div></a>
+    <a href="inbox.html" class="footer-button"><i class="fas fa-inbox icon"></i><div class="label">صندوق الوارد</div></a>
+    <a href="profile.html" class="footer-button"><i class="fas fa-user icon"></i><div class="label">الملف الشخصي</div></a>
+</div>
+
+<script>
+    const currentUser = getCurrentUser();
+    if (!currentUser) window.location.href = 'login.html';
+
+    // متغيرات الصورة
+    let newAvatarFile = null;
+    let currentAvatarUrl = '';
+
+    // تحميل بيانات المستخدم الحالية
+    async function loadProfile() {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        if (error || !user) return;
+
+        // ملء الحقول
+        document.getElementById('username').value = user.username || '';
+        document.getElementById('fullName').value = user.full_name || '';
+        document.getElementById('bio').value = user.bio || '';
+        currentAvatarUrl = user.avatar || '';
+        document.getElementById('avatarPreview').src = currentAvatarUrl || 'https://randomuser.me/api/portraits/lego/5.jpg';
+
+        // تحميل الروابط
+        const { data: links } = await supabase
+            .from('user_links')
+            .select('*')
+            .eq('user_id', currentUser.id);
+        if (links) {
+            links.forEach(link => addLinkField(link.platform, link.url, link.id));
+        }
+    }
+
+    // معاينة الصورة المختارة
+    window.previewAvatar = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        newAvatarFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('avatarPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // إضافة حقل رابط جديد
+    window.addLinkField = function(platform = '', url = '', linkId = null) {
+        const linksList = document.getElementById('linksList');
+        const div = document.createElement('div');
+        div.className = 'social-link-item';
+        div.dataset.linkId = linkId || '';
+        div.innerHTML = `
+            <input type="text" placeholder="المنصة (twitter, instagram...)" value="${platform}" class="link-platform">
+            <input type="url" placeholder="الرابط" value="${url}" class="link-url">
+            <button onclick="this.parentElement.remove()"><i class="fas fa-trash"></i></button>
+        `;
+        linksList.appendChild(div);
+    };
+
+    // رفع الصورة إذا تغيرت
+    async function uploadAvatar(file) {
+        const fileName = `avatars/${currentUser.id}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error } = await supabase.storage
+            .from('ramz-x-images')
+            .upload(fileName, file, { upsert: true, cacheControl: '3600' });
+        if (error) throw error;
+        const { data: publicUrlData } = supabase.storage
+            .from('ramz-x-images')
+            .getPublicUrl(fileName);
+        return publicUrlData.publicUrl;
+    }
+
+    // حفظ جميع التعديلات
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        const username = document.getElementById('username').value.trim();
+        const fullName = document.getElementById('fullName').value.trim();
+        const bio = document.getElementById('bio').value.trim();
+
+        if (!username) {
+            showToast('اسم المستخدم مطلوب', true);
+            return;
+        }
+
+        try {
+            let avatarUrl = currentAvatarUrl;
+            if (newAvatarFile) {
+                showToast('جاري رفع الصورة...');
+                avatarUrl = await uploadAvatar(newAvatarFile);
+            }
+
+            // تحديث جدول المستخدمين
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                    username: username,
+                    full_name: fullName,
+                    bio: bio,
+                    avatar: avatarUrl
+                })
+                .eq('id', currentUser.id);
+
+            if (updateError) throw updateError;
+
+            // حفظ روابط التواصل
+            // حذف القديمة ثم إدراج الجديدة
+            await supabase.from('user_links').delete().eq('user_id', currentUser.id);
+
+            const linkItems = document.querySelectorAll('.social-link-item');
+            const linksToInsert = [];
+            linkItems.forEach(item => {
+                const platform = item.querySelector('.link-platform').value.trim();
+                const url = item.querySelector('.link-url').value.trim();
+                if (platform && url) {
+                    linksToInsert.push({ user_id: currentUser.id, platform, url });
+                }
+            });
+            if (linksToInsert.length > 0) {
+                await supabase.from('user_links').insert(linksToInsert);
+            }
+
+            showToast('تم حفظ التغييرات بنجاح');
+            setTimeout(() => window.location.href = 'profile.html', 800);
+        } catch (err) {
+            console.error(err);
+            showToast('فشل الحفظ: ' + (err.message || 'خطأ'), true);
+        }
+    });
+
+    // تهيئة الصفحة
+    loadProfile();
+
+    // تطبيق الثيم
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') document.body.classList.remove('light');
+    else document.body.classList.add('light');
+</script>
+</body>
+</html>
