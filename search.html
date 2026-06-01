@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>بحث | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --accent: #ff0050;
+            --accent-blue: #3b82f6;
+            --border: #2c2c2c;
+            --radius: 1rem;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+        .header h2 { flex: 1; font-size: 18px; }
+        .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+        .search-bar {
+            padding: 10px 16px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+        .search-input:focus { border-color: var(--accent); }
+        .results { max-width: 600px; margin: 0 auto; padding: 8px; }
+        .section-title { font-weight: 700; margin: 16px 0 8px; color: var(--text-secondary); font-size: 14px; }
+        .user-item, .post-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            background: var(--bg-card); border-radius: 12px; margin-bottom: 8px;
+            cursor: pointer; transition: background 0.2s; border: 1px solid var(--border);
+        }
+        .user-item:hover, .post-item:hover { background: var(--bg-input); }
+        .user-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--bg-input); }
+        .user-info { flex: 1; }
+        .user-name { font-weight: 700; }
+        .user-username { font-size: 12px; color: var(--text-muted); }
+        .post-thumbnail { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: var(--bg-input); }
+        .post-content { flex: 1; }
+        .post-title { font-weight: 700; margin-bottom: 2px; }
+        .post-excerpt { font-size: 12px; color: var(--text-muted); }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+        .bottom-footer {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            border-top: 1px solid var(--border); z-index: 100; max-width: 600px; margin: 0 auto;
+        }
+        .footer-button {
+            background: none; border: none; text-align: center; cursor: pointer;
+            color: var(--text-secondary); text-decoration: none; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .footer-button .icon { font-size: 22px; }
+        .footer-button .label { font-size: 11px; font-weight: 600; }
+        .footer-button.create-btn .icon { font-size: 28px; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="icon-btn" onclick="history.back()"><i class="fas fa-arrow-right"></i></button>
+    <h2>بحث</h2>
+    <div></div>
+</div>
+
+<div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن مستخدمين أو منشورات..." autofocus>
+</div>
+
+<div class="results" id="resultsContainer">
+    <div class="empty-state">
+        <i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:10px;"></i>
+        <p>ابدأ بكتابة اسم المستخدم أو عنوان المنشور</p>
+    </div>
+</div>
+
+<div class="bottom-footer">
+    <a href="home.html" class="footer-button"><i class="fas fa-home icon"></i><div class="label">الصفحة الرئيسية</div></a>
+    <a href="explore.html" class="footer-button"><i class="fas fa-compass icon"></i><div class="label">استكشاف</div></a>
+    <a href="create-post.html" class="footer-button create-btn"><i class="fas fa-plus-circle icon"></i><div class="label">إنشاء</div></a>
+    <a href="inbox.html" class="footer-button"><i class="fas fa-inbox icon"></i><div class="label">صندوق الوارد</div></a>
+    <a href="profile.html" class="footer-button"><i class="fas fa-user icon"></i><div class="label">الملف الشخصي</div></a>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const resultsContainer = document.getElementById('resultsContainer');
+
+    // بحث أثناء الكتابة مع تأخير بسيط
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        const query = searchInput.value.trim();
+        if (query.length === 0) {
+            resultsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:10px;"></i><p>ابدأ بكتابة اسم المستخدم أو عنوان المنشور</p></div>`;
+            return;
+        }
+        // انتظار 300 مللي ثانية قبل البحث
+        searchTimeout = setTimeout(() => performSearch(query), 300);
+    });
+
+    async function performSearch(query) {
+        resultsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري البحث...</div>';
+
+        try {
+            // البحث في المستخدمين والمنشورات بالتوازي
+            const [usersRes, postsRes] = await Promise.all([
+                supabase.from('users').select('id, username, avatar, verified').ilike('username', `%${query}%`).limit(5),
+                supabase.from('posts').select('id, title, content, image, category').ilike('title', `%${query}%`).limit(5)
+            ]);
+
+            const users = usersRes.data || [];
+            const posts = postsRes.data || [];
+
+            if (users.length === 0 && posts.length === 0) {
+                resultsContainer.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>لا توجد نتائج</p></div>';
+                return;
+            }
+
+            let html = '';
+
+            // عرض المستخدمين
+            if (users.length > 0) {
+                html += '<div class="section-title">👤 المستخدمون</div>';
+                users.forEach(user => {
+                    html += `
+                        <div class="user-item" onclick="window.location.href='public-profile.html?user=${user.id}'">
+                            <img class="user-avatar" src="${user.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}" alt="">
+                            <div class="user-info">
+                                <div class="user-name">
+                                    ${user.verified ? '<i class="fas fa-check-circle" style="color:var(--accent-blue);font-size:12px;"></i> ' : ''}
+                                    ${escapeHtml(user.username)}
+                                </div>
+                                <div class="user-username">@${escapeHtml(user.username)}</div>
+                            </div>
+                            <i class="fas fa-chevron-left" style="color:var(--text-muted);"></i>
+                        </div>
+                    `;
+                });
+            }
+
+            // عرض المنشورات
+            if (posts.length > 0) {
+                html += '<div class="section-title">📝 المنشورات</div>';
+                posts.forEach(post => {
+                    const firstImage = parseImages(post.image)[0] || '';
+                    html += `
+                        <div class="post-item" onclick="window.location.href='home.html'">
+                            ${firstImage ? `<img class="post-thumbnail" src="${firstImage}" alt="">` : ''}
+                            <div class="post-content">
+                                <div class="post-title">${escapeHtml(post.title)}</div>
+                                <div class="post-excerpt">${escapeHtml(post.content?.substring(0, 80) || '')}</div>
+                                <div style="font-size:10px;color:var(--accent);">${post.category || 'عام'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContainer.innerHTML = html;
+        } catch (err) {
+            console.error(err);
+            resultsContainer.innerHTML = '<div class="empty-state">حدث خطأ أثناء البحث</div>';
+        }
+    }
+
+    // تطبيق الثيم
+    (() => {
+        const saved = localStorage.getItem('darkMode');
+        if (saved === 'true') document.body.classList.remove('light');
+        else document.body.classList.add('light');
+    })();
+</script>
+</body>
+</html>
