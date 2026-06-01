@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>الأصدقاء | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --accent: #ff0050;
+            --accent-blue: #3b82f6;
+            --border: #2c2c2c;
+            --radius: 1rem;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+        .header h2 { flex: 1; font-size: 18px; }
+        .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+
+        .stats-row { display: flex; justify-content: center; gap: 24px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .stat-item { text-align: center; }
+        .stat-count { font-weight: 700; font-size: 18px; }
+        .stat-label { font-size: 12px; color: var(--text-muted); }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .tab {
+            flex: 1; text-align: center; padding: 12px; cursor: pointer;
+            color: var(--text-secondary); border-bottom: 2px solid transparent;
+            font-weight: 600; font-size: 14px; transition: 0.2s;
+        }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .user-list { max-width: 600px; margin: 0 auto; padding: 8px; }
+        .user-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px;
+            background: var(--bg-card); border-radius: 12px; margin-bottom: 8px;
+            cursor: pointer; border: 1px solid var(--border); transition: background 0.2s;
+        }
+        .user-item:hover { background: var(--bg-input); }
+        .user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-input); }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name { font-weight: 700; font-size: 15px; }
+        .user-bio { font-size: 11px; color: var(--text-muted); }
+        .follow-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 7px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .follow-btn.unfollow {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+
+        .bottom-footer {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            border-top: 1px solid var(--border); z-index: 100; max-width: 600px; margin: 0 auto;
+        }
+        .footer-button {
+            background: none; border: none; text-align: center; cursor: pointer;
+            color: var(--text-secondary); text-decoration: none; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .footer-button .icon { font-size: 22px; }
+        .footer-button .label { font-size: 11px; font-weight: 600; }
+        .footer-button.create-btn .icon { font-size: 28px; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="icon-btn" onclick="history.back()"><i class="fas fa-arrow-right"></i></button>
+    <h2>الأصدقاء</h2>
+    <button class="icon-btn" onclick="showToast('قريباً: إضافة صديق')"><i class="fas fa-user-plus"></i></button>
+</div>
+
+<div class="stats-row">
+    <div class="stat-item">
+        <div class="stat-count" id="followersCount">0</div>
+        <div class="stat-label">متابِعون</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-count" id="followingCount">0</div>
+        <div class="stat-label">متابَعون</div>
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" data-tab="followers">المتابِعون</div>
+    <div class="tab" data-tab="following">المتابَعون</div>
+    <div class="tab" data-tab="suggestions">اقتراحات</div>
+</div>
+
+<div class="user-list" id="userList">
+    <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>
+</div>
+
+<div class="bottom-footer">
+    <a href="home.html" class="footer-button"><i class="fas fa-home icon"></i><div class="label">الصفحة الرئيسية</div></a>
+    <a href="explore.html" class="footer-button"><i class="fas fa-compass icon"></i><div class="label">استكشاف</div></a>
+    <a href="create-post.html" class="footer-button create-btn"><i class="fas fa-plus-circle icon"></i><div class="label">إنشاء</div></a>
+    <a href="inbox.html" class="footer-button"><i class="fas fa-inbox icon"></i><div class="label">صندوق الوارد</div></a>
+    <a href="profile.html" class="footer-button"><i class="fas fa-user icon"></i><div class="label">الملف الشخصي</div></a>
+</div>
+
+<script>
+    const currentUser = getCurrentUser();
+    if (!currentUser) window.location.href = 'login.html';
+
+    let activeTab = 'followers';
+    let followingSet = new Set(); // لتتبع من نتابعهم
+
+    // تبديل التبويبات
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            activeTab = tab.dataset.tab;
+            loadTabContent(activeTab);
+        });
+    });
+
+    // تحميل الإحصائيات أولاً
+    async function loadStats() {
+        const [followersRes, followingRes] = await Promise.all([
+            supabase.from('follows').select('*', { count: 'exact' }).eq('following_id', currentUser.id),
+            supabase.from('follows').select('*', { count: 'exact' }).eq('user_id', currentUser.id)
+        ]);
+        document.getElementById('followersCount').textContent = formatNumber(followersRes.count || 0);
+        document.getElementById('followingCount').textContent = formatNumber(followingRes.count || 0);
+    }
+
+    // تحميل قائمة المتابَعين الحالية لتحديث الأزرار
+    async function loadFollowingSet() {
+        const { data } = await supabase.from('follows').select('following_id').eq('user_id', currentUser.id);
+        followingSet = new Set((data || []).map(f => f.following_id));
+    }
+
+    // تحميل المحتوى حسب التبويب
+    async function loadTabContent(tab) {
+        const list = document.getElementById('userList');
+        list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>';
+
+        await loadFollowingSet(); // تحديث مجموعة المتابعين
+
+        let users = [];
+
+        if (tab === 'followers') {
+            // المتابِعون: من يتابع المستخدم الحالي
+            const { data } = await supabase
+                .from('follows')
+                .select('user:user_id (id, username, avatar, verified)')
+                .eq('following_id', currentUser.id);
+            users = (data || []).map(f => f.user).filter(Boolean);
+        } else if (tab === 'following') {
+            // المتابَعون: من يتابعهم المستخدم الحالي
+            const { data } = await supabase
+                .from('follows')
+                .select('following:following_id (id, username, avatar, verified)')
+                .eq('user_id', currentUser.id);
+            users = (data || []).map(f => f.following).filter(Boolean);
+        } else {
+            // اقتراحات: مستخدمون لا يتابعهم حالياً
+            const { data } = await supabase
+                .from('users')
+                .select('id, username, avatar, verified')
+                .neq('id', currentUser.id)
+                .limit(20);
+            users = (data || []).filter(u => !followingSet.has(u.id));
+        }
+
+        if (!users.length) {
+            list.innerHTML = '<div class="empty-state">لا يوجد مستخدمين</div>';
+            return;
+        }
+
+        list.innerHTML = users.map(u => `
+            <div class="user-item" onclick="goToProfile('${u.id}')">
+                <img class="user-avatar" src="${u.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}" alt="">
+                <div class="user-info">
+                    <div class="user-name">
+                        ${u.verified ? '<i class="fas fa-check-circle" style="color:var(--accent-blue);font-size:12px;"></i> ' : ''}
+                        ${escapeHtml(u.username)}
+                    </div>
+                </div>
+                <button class="follow-btn ${followingSet.has(u.id) ? 'unfollow' : ''}" onclick="event.stopPropagation(); toggleFollow('${u.id}', this)">
+                    ${followingSet.has(u.id) ? 'إلغاء المتابعة' : 'متابعة'}
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // متابعة / إلغاء متابعة
+    window.toggleFollow = async function(userId, btn) {
+        const isFollowing = btn.classList.contains('unfollow');
+        if (isFollowing) {
+            const { error } = await supabase
+                .from('follows')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('following_id', userId);
+            if (!error) {
+                btn.classList.remove('unfollow');
+                btn.textContent = 'متابعة';
+                followingSet.delete(userId);
+                showToast('تم إلغاء المتابعة');
+                loadStats();
+            }
+        } else {
+            const { error } = await supabase
+                .from('follows')
+                .insert({ user_id: currentUser.id, following_id: userId });
+            if (!error) {
+                btn.classList.add('unfollow');
+                btn.textContent = 'إلغاء المتابعة';
+                followingSet.add(userId);
+                showToast('تمت المتابعة');
+                loadStats();
+            }
+        }
+    };
+
+    // الانتقال إلى الملف العام
+    window.goToProfile = function(userId) {
+        window.location.href = `public-profile.html?user=${userId}`;
+    };
+
+    // تحميل الصفحة
+    async function init() {
+        await loadStats();
+        await loadTabContent('followers');
+    }
+
+    init();
+
+    // تطبيق الثيم
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') document.body.classList.remove('light');
+    else document.body.classList.add('light');
+</script>
+</body>
+</html>
