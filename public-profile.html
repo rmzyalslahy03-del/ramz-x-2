@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>الملف العام | Ramz-X</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -276,7 +273,6 @@
     // زر المراسلة – ينشئ محادثة وينتقل إلى inbox
     window.sendMessage = async function(uid) {
         if (!currentUser || !uid) return;
-        // البحث عن محادثة موجودة
         const { data: existing } = await supabase
             .from('conversation_participants')
             .select('conversation_id')
@@ -295,7 +291,6 @@
                 }
             }
         }
-        // إنشاء محادثة جديدة
         const { data: conv } = await supabase.from('conversations').insert({}).select().single();
         await supabase.from('conversation_participants').insert([
             { conversation_id: conv.id, user_id: currentUser.id },
@@ -308,17 +303,9 @@
     window.viewStory = (img) => showToast('عرض القصة: ' + img);
 
     loadPublicProfile();
-
     const saved = localStorage.getItem('darkMode');
     if (saved === 'true') document.body.classList.remove('light');
     else document.body.classList.add('light');
-
-    // تسجيل Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('✅ Service Worker مسجل:', reg.scope))
-            .catch(err => console.warn('⚠️ فشل تسجيل Service Worker:', err));
-    }
 </script>
 </body>
 </html>
