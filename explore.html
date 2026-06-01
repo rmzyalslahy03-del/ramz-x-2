@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>استكشاف | Ramz-X</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -55,18 +58,23 @@
         .post-card {
             background: var(--bg-card); border-radius: var(--radius);
             margin-bottom: 16px; overflow: hidden; border: 1px solid var(--border);
+            cursor: pointer; transition: background 0.2s;
         }
+        .post-card:hover { background: var(--bg-input); }
         .post-image { width: 100%; max-height: 400px; object-fit: cover; display: block; background: var(--bg-input); }
         .post-content { padding: 12px; }
         .post-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
         .post-text { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
         .post-date { font-size: 10px; color: var(--text-muted); margin-top: 8px; }
+        .post-stats { display: flex; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+        .post-stats span { display: flex; align-items: center; gap: 4px; }
 
         .user-item {
             display: flex; align-items: center; gap: 12px; padding: 12px;
             background: var(--bg-card); border-radius: 12px; margin-bottom: 8px;
-            cursor: pointer; border: 1px solid var(--border);
+            cursor: pointer; border: 1px solid var(--border); transition: background 0.2s;
         }
+        .user-item:hover { background: var(--bg-input); }
         .user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-input); }
         .user-info { flex: 1; }
         .user-name { font-weight: 700; }
@@ -75,8 +83,9 @@
         .category-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
         .chip {
             background: var(--bg-card); border: 1px solid var(--border);
-            padding: 8px 16px; border-radius: 20px; cursor: pointer;
-            font-size: 13px; transition: 0.2s;
+            padding: 10px 20px; border-radius: 20px; cursor: pointer;
+            font-size: 14px; font-weight: 600; transition: 0.2s;
+            color: var(--text-secondary);
         }
         .chip:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -142,26 +151,33 @@
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>';
 
         if (tab === 'trending') {
-            // المنشورات الرائجة (الأكثر إعجاباً أو مشاهدة)
+            // المنشورات الرائجة (الأكثر إعجاباً)
             const { data: posts, error } = await supabase
                 .from('posts')
                 .select('*, users:author_id (username, avatar)')
                 .eq('hidden', false)
                 .order('likes_count', { ascending: false })
                 .limit(15);
+
             if (error || !posts?.length) {
-                container.innerHTML = '<div class="empty-state">لا توجد منشورات</div>';
+                container.innerHTML = '<div class="empty-state">لا توجد منشورات رائجة حالياً</div>';
                 return;
             }
+
             container.innerHTML = posts.map(p => {
                 const img = parseImages(p.image)[0];
                 return `
                 <div class="post-card" onclick="window.location.href='home.html'">
-                    ${img ? `<img class="post-image" src="${img}" alt="">` : ''}
+                    ${img ? `<img class="post-image" src="${img}" alt="" loading="lazy">` : ''}
                     <div class="post-content">
                         <div class="post-title">${escapeHtml(p.title)}</div>
                         <div class="post-text">${escapeHtml(p.content?.substring(0, 200) || '')}</div>
                         <div class="post-date">${timeAgo(p.created_at)} • ${p.category || 'عام'}</div>
+                        <div class="post-stats">
+                            <span><i class="far fa-heart"></i> ${formatNumber(p.likes_count || 0)}</span>
+                            <span><i class="far fa-comment"></i> ${formatNumber(p.comments_count || 0)}</span>
+                            <span><i class="far fa-eye"></i> ${formatNumber(p.views_count || 0)}</span>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
@@ -170,35 +186,57 @@
             // مستخدمون مقترحون (غير متابعين)
             const currentUser = getCurrentUser();
             let query = supabase.from('users').select('id, username, avatar, verified').limit(15);
+
             if (currentUser) {
-                const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', currentUser.id);
+                const { data: follows } = await supabase
+                    .from('follows')
+                    .select('following_id')
+                    .eq('follower_id', currentUser.id);
+
                 const ids = (follows || []).map(f => f.following_id);
-                ids.push(currentUser.id);
+                ids.push(currentUser.id); // استبعاد المستخدم الحالي أيضاً
                 query = query.not('id', 'in', `(${ids.join(',')})`);
             }
+
             const { data: users, error } = await query;
+
             if (error || !users?.length) {
-                container.innerHTML = '<div class="empty-state">لا يوجد مستخدمون</div>';
+                container.innerHTML = '<div class="empty-state">لا يوجد مستخدمون مقترحون حالياً</div>';
                 return;
             }
+
             container.innerHTML = users.map(u => `
                 <div class="user-item" onclick="window.location.href='public-profile.html?user=${u.id}'">
-                    <img class="user-avatar" src="${u.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}">
+                    <img class="user-avatar" src="${u.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}" alt="">
                     <div class="user-info">
-                        <div class="user-name">${u.verified ? '<i class="fas fa-check-circle" style="color:var(--accent-blue);font-size:12px;"></i> ' : ''}${escapeHtml(u.username)}</div>
+                        <div class="user-name">
+                            ${u.verified ? '<i class="fas fa-check-circle" style="color:var(--accent-blue);font-size:12px;"></i> ' : ''}
+                            ${escapeHtml(u.username)}
+                        </div>
                         <div class="user-username">@${escapeHtml(u.username)}</div>
                     </div>
+                    <i class="fas fa-chevron-left" style="color:var(--text-muted);"></i>
                 </div>
             `).join('');
         }
         else if (tab === 'categories') {
             // عرض قائمة بالتصنيفات
-            const categories = ['تقنية', 'أدب', 'فن', 'سفر', 'موسيقى', 'رياضة', 'عام'];
+            const categories = [
+                'تقنية', 'أدب', 'فن', 'سفر', 'موسيقى', 'رياضة', 'عام',
+                'فلسفة', 'خواطر', 'مغامرات', 'تعليم', 'ترفيه', 'أخبار'
+            ];
+
             container.innerHTML = `
                 <div class="category-chips">
-                    ${categories.map(c => `<div class="chip" onclick="window.location.href='search.html?q=${c}'">${c}</div>`).join('')}
+                    ${categories.map(c => `
+                        <div class="chip" onclick="window.location.href='search.html?q=${encodeURIComponent(c)}'">
+                            ${c}
+                        </div>
+                    `).join('')}
                 </div>
-                <p style="text-align:center;color:var(--text-muted);margin-top:20px;">اختر تصنيفاً لاستعراض المنشورات</p>
+                <p style="text-align:center;color:var(--text-muted);margin-top:20px;">
+                    اختر تصنيفاً لاستعراض المنشورات المتعلقة
+                </p>
             `;
         }
     }
@@ -207,11 +245,16 @@
     loadContent('trending');
 
     // تطبيق الثيم
-    (() => {
-        const saved = localStorage.getItem('darkMode');
-        if (saved === 'true') document.body.classList.remove('light');
-        else document.body.classList.add('light');
-    })();
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') document.body.classList.remove('light');
+    else document.body.classList.add('light');
+
+    // تسجيل Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ Service Worker مسجل:', reg.scope))
+            .catch(err => console.warn('⚠️ فشل تسجيل Service Worker:', err));
+    }
 </script>
 </body>
 </html>
