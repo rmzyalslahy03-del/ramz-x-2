@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>تسجيل الدخول | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --accent: #ff0050;
+            --border: #2c2c2c;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --border: #e0e0e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        .auth-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 32px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #3b82f6, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+        .input-group {
+            margin-bottom: 16px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+        .primary-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-size: 16px;
+            margin-top: 8px;
+            position: relative;
+        }
+        .primary-btn:disabled { opacity: 0.5; pointer-events: none; }
+        .secondary-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-size: 16px;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        .secondary-btn:hover { background: var(--bg-input); }
+        .guest-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            margin-top: 12px;
+            transition: border-color 0.2s, color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .guest-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .toggle-link {
+            text-align: center;
+            margin-top: 16px;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .toggle-link span { color: var(--text-secondary); }
+
+        /* شريط التقدم */
+        .progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container" id="loginForm">
+    <div class="logo">Ramz-X</div>
+    <h2>تسجيل الدخول</h2>
+    <div class="input-group">
+        <input type="email" id="loginEmail" placeholder="البريد الإلكتروني">
+    </div>
+    <div class="input-group">
+        <input type="password" id="loginPassword" placeholder="كلمة المرور">
+    </div>
+    <button class="primary-btn" id="loginBtn">دخول</button>
+    <div class="toggle-link" onclick="toggleForm()">
+        <span>ليس لديك حساب؟</span> سجل الآن
+    </div>
+    <button class="guest-btn" id="guestBtn"><i class="fas fa-user-secret"></i> الدخول كزائر</button>
+    <div class="progress-container" id="loginProgress">
+        <div class="progress-bar"><div class="progress-fill" id="loginProgressFill"></div></div>
+        <div class="progress-text" id="loginProgressText">جاري تسجيل الدخول...</div>
+    </div>
+</div>
+
+<div class="auth-container" id="signupForm" style="display:none">
+    <div class="logo">Ramz-X</div>
+    <h2>إنشاء حساب</h2>
+    <div class="input-group">
+        <input type="text" id="signupUsername" placeholder="اسم المستخدم">
+    </div>
+    <div class="input-group">
+        <input type="email" id="signupEmail" placeholder="البريد الإلكتروني">
+    </div>
+    <div class="input-group">
+        <input type="password" id="signupPassword" placeholder="كلمة المرور">
+    </div>
+    <button class="primary-btn" id="signupBtn">تسجيل</button>
+    <div class="toggle-link" onclick="toggleForm()">
+        <span>لديك حساب؟</span> سجل الدخول
+    </div>
+    <button class="guest-btn" onclick="enterAsGuest()"><i class="fas fa-user-secret"></i> الدخول كزائر</button>
+    <div class="progress-container" id="signupProgress">
+        <div class="progress-bar"><div class="progress-fill" id="signupProgressFill"></div></div>
+        <div class="progress-text" id="signupProgressText">جاري إنشاء الحساب...</div>
+    </div>
+</div>
+
+<script>
+    // دوال common.js متاحة: supabase, showToast, getCurrentUser, checkSession
+
+    // تبديل بين النموذجين
+    function toggleForm() {
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        if (loginForm.style.display === 'none') {
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+        } else {
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
+        }
+    }
+
+    // محاكاة شريط التقدم مع رسالة
+    function showProgress(type) {
+        const progressContainer = document.getElementById(type === 'login' ? 'loginProgress' : 'signupProgress');
+        const progressFill = document.getElementById(type === 'login' ? 'loginProgressFill' : 'signupProgressFill');
+        const progressText = document.getElementById(type === 'login' ? 'loginProgressText' : 'signupProgressText');
+        const btn = document.getElementById(type === 'login' ? 'loginBtn' : 'signupBtn');
+
+        btn.disabled = true;
+        progressContainer.style.display = 'block';
+        let width = 0;
+        const interval = setInterval(() => {
+            width += 10;
+            if (width > 90) width = 90; // نتوقف عند 90% لحين اكتمال العملية
+            progressFill.style.width = width + '%';
+        }, 200);
+
+        return {
+            done: (success = true) => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+                progressText.textContent = success ? 'تم بنجاح!' : 'حدث خطأ';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressFill.style.width = '0%';
+                    progressText.textContent = type === 'login' ? 'جاري تسجيل الدخول...' : 'جاري إنشاء الحساب...';
+                    btn.disabled = false;
+                }, 1500);
+            },
+            error: () => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+                progressText.textContent = 'فشل، حاول مرة أخرى';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    progressFill.style.width = '0%';
+                    progressText.textContent = type === 'login' ? 'جاري تسجيل الدخول...' : 'جاري إنشاء الحساب...';
+                    btn.disabled = false;
+                }, 2000);
+            }
+        };
+    }
+
+    // الدخول كزائر
+    window.enterAsGuest = async function() {
+        const guestBtn = document.getElementById('guestBtn');
+        guestBtn.disabled = true;
+        showToast('جاري الدخول كزائر...');
+        await checkSession();
+        window.location.href = 'home.html';
+    };
+
+    // تسجيل الدخول
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        if (!email || !password) {
+            showToast('يرجى ملء جميع الحقول', true);
+            return;
+        }
+        const progress = showProgress('login');
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            progress.error();
+            showToast(error.message, true);
+        } else {
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            progress.done(true);
+            showToast('تم تسجيل الدخول بنجاح');
+            setTimeout(() => {
+                window.location.href = 'home.html';
+            }, 500);
+        }
+    });
+
+    // إنشاء حساب جديد
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+        const username = document.getElementById('signupUsername').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+        if (!username || !email || !password) {
+            showToast('يرجى ملء جميع الحقول', true);
+            return;
+        }
+        const progress = showProgress('signup');
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            progress.error();
+            showToast(error.message, true);
+        } else {
+            await supabase.from('users').insert({
+                id: data.user.id,
+                username: username,
+                email: email,
+                avatar: `https://randomuser.me/api/portraits/lego/${Math.floor(Math.random()*8)+1}.jpg`
+            });
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            progress.done(true);
+            showToast('تم إنشاء الحساب بنجاح');
+            setTimeout(() => {
+                window.location.href = 'home.html';
+            }, 500);
+        }
+    });
+
+    // زر الضيف أيضاً في الأسفل (التسجيل)
+    document.getElementById('guestBtn').addEventListener('click', enterAsGuest);
+
+    // تطبيق الثيم
+    (() => {
+        const saved = localStorage.getItem('darkMode');
+        if (saved === 'true') document.body.classList.remove('light');
+        else document.body.classList.add('light');
+    })();
+</script>
+</body>
+</html>
