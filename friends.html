@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
     <title>الأصدقاء | Ramz-X</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -148,7 +145,7 @@
     if (!currentUser) window.location.href = 'login.html';
 
     let activeTab = 'followers';
-    let followingSet = new Set();
+    let followingSet = new Set(); // لتتبع من نتابعهم
 
     // تبديل التبويبات
     document.querySelectorAll('.tab').forEach(tab => {
@@ -164,7 +161,7 @@
     async function loadStats() {
         const [followersRes, followingRes] = await Promise.all([
             supabase.from('follows').select('*', { count: 'exact' }).eq('following_id', currentUser.id),
-            supabase.from('follows').select('*', { count: 'exact' }).eq('follower_id', currentUser.id)
+            supabase.from('follows').select('*', { count: 'exact' }).eq('user_id', currentUser.id)
         ]);
         document.getElementById('followersCount').textContent = formatNumber(followersRes.count || 0);
         document.getElementById('followingCount').textContent = formatNumber(followingRes.count || 0);
@@ -172,7 +169,7 @@
 
     // تحميل قائمة المتابَعين الحالية لتحديث الأزرار
     async function loadFollowingSet() {
-        const { data } = await supabase.from('follows').select('following_id').eq('follower_id', currentUser.id);
+        const { data } = await supabase.from('follows').select('following_id').eq('user_id', currentUser.id);
         followingSet = new Set((data || []).map(f => f.following_id));
     }
 
@@ -181,23 +178,26 @@
         const list = document.getElementById('userList');
         list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>';
 
-        await loadFollowingSet();
+        await loadFollowingSet(); // تحديث مجموعة المتابعين
 
         let users = [];
 
         if (tab === 'followers') {
+            // المتابِعون: من يتابع المستخدم الحالي
             const { data } = await supabase
                 .from('follows')
-                .select('follower:user_id (id, username, avatar, verified)')
+                .select('user:user_id (id, username, avatar, verified)')
                 .eq('following_id', currentUser.id);
-            users = (data || []).map(f => f.follower).filter(Boolean);
+            users = (data || []).map(f => f.user).filter(Boolean);
         } else if (tab === 'following') {
+            // المتابَعون: من يتابعهم المستخدم الحالي
             const { data } = await supabase
                 .from('follows')
                 .select('following:following_id (id, username, avatar, verified)')
-                .eq('follower_id', currentUser.id);
+                .eq('user_id', currentUser.id);
             users = (data || []).map(f => f.following).filter(Boolean);
         } else {
+            // اقتراحات: مستخدمون لا يتابعهم حالياً
             const { data } = await supabase
                 .from('users')
                 .select('id, username, avatar, verified')
@@ -234,7 +234,7 @@
             const { error } = await supabase
                 .from('follows')
                 .delete()
-                .eq('follower_id', currentUser.id)
+                .eq('user_id', currentUser.id)
                 .eq('following_id', userId);
             if (!error) {
                 btn.classList.remove('unfollow');
@@ -246,7 +246,7 @@
         } else {
             const { error } = await supabase
                 .from('follows')
-                .insert({ follower_id: currentUser.id, following_id: userId });
+                .insert({ user_id: currentUser.id, following_id: userId });
             if (!error) {
                 btn.classList.add('unfollow');
                 btn.textContent = 'إلغاء المتابعة';
@@ -274,13 +274,6 @@
     const saved = localStorage.getItem('darkMode');
     if (saved === 'true') document.body.classList.remove('light');
     else document.body.classList.add('light');
-
-    // تسجيل Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('✅ Service Worker مسجل:', reg.scope))
-            .catch(err => console.warn('⚠️ فشل تسجيل Service Worker:', err));
-    }
 </script>
 </body>
 </html>
