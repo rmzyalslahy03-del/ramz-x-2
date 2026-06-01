@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>ملفي الشخصي | Ramz-X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #111111;
+            --bg-input: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #777777;
+            --accent: #ff0050;
+            --accent-blue: #3b82f6;
+            --border: #2c2c2c;
+            --radius: 1rem;
+        }
+        body.light {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-input: #e8e8e8;
+            --text-primary: #111111;
+            --text-secondary: #444444;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-primary);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 70px;
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        .header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+        .header h2 { flex: 1; font-size: 18px; }
+        .icon-btn { background: none; border: none; color: var(--text-primary); font-size: 20px; cursor: pointer; padding: 8px; border-radius: 50%; }
+        .profile-container { max-width: 600px; margin: 0 auto; padding-bottom: 20px; }
+
+        .cover-section { position: relative; }
+        .cover-image {
+            width: 100%; height: 180px; object-fit: cover; display: block;
+            background: var(--bg-input); border-bottom: 1px solid var(--border);
+        }
+        .avatar-section { text-align: center; margin-top: -45px; position: relative; z-index: 2; }
+        .avatar {
+            width: 90px; height: 90px; border-radius: 50%; object-fit: cover;
+            border: 3px solid var(--accent); background: var(--bg-input);
+        }
+        .profile-details { text-align: center; padding: 8px 16px 16px; }
+        .username { font-size: 22px; font-weight: 800; }
+        .full-name { color: var(--text-secondary); margin: 4px 0; }
+        .bio { color: var(--text-secondary); font-size: 14px; margin: 8px 0; }
+        .stats { display: flex; justify-content: center; gap: 28px; margin: 16px 0; }
+        .stat { text-align: center; }
+        .stat-number { font-weight: 700; font-size: 16px; }
+        .stat-label { font-size: 12px; color: var(--text-muted); }
+        .actions { display: flex; justify-content: center; gap: 12px; margin: 12px 0; }
+        .primary-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+        }
+        .secondary-btn {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .links-section { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 12px 16px; }
+        .social-link {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 13px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .stories-row { display: flex; gap: 12px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; align-items: center; }
+        .stories-row::-webkit-scrollbar { display: none; }
+        .story-item { flex: 0 0 auto; width: 68px; text-align: center; cursor: pointer; }
+        .story-ring { width: 64px; height: 64px; border-radius: 50%; padding: 2px; background: linear-gradient(45deg, var(--accent), var(--accent-blue)); margin: 0 auto 4px; }
+        .story-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bg-primary); }
+        .story-time { font-size: 10px; color: var(--text-muted); }
+        .add-story-item { margin-right: 4px; }
+        .add-story-circle {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: var(--bg-input); border: 2px dashed var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: var(--accent); margin: 0 auto 4px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .add-story-circle:hover { background: var(--accent); color: white; }
+
+        .tabs { display: flex; border-bottom: 1px solid var(--border); margin-top: 16px; }
+        .tab {
+            flex: 1; text-align: center; padding: 10px; cursor: pointer;
+            color: var(--text-secondary); border-bottom: 2px solid transparent;
+            font-weight: 600; font-size: 13px;
+        }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-content { margin: 16px; }
+        .post-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .post-image { width: 100%; max-height: 400px; object-fit: cover; display: block; background: var(--bg-input); }
+        .post-content { padding: 12px; }
+        .post-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+        .post-text { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+        .post-date { font-size: 10px; color: var(--text-muted); margin-top: 8px; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+
+        .bottom-footer {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card);
+            display: flex; justify-content: space-around; padding: 8px 0;
+            border-top: 1px solid var(--border); z-index: 100; max-width: 600px; margin: 0 auto;
+        }
+        .footer-button {
+            background: none; border: none; text-align: center; cursor: pointer;
+            color: var(--text-secondary); text-decoration: none; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .footer-button .icon { font-size: 22px; }
+        .footer-button .label { font-size: 11px; font-weight: 600; }
+        .footer-button.create-btn .icon { font-size: 28px; color: var(--accent); }
+
+        #storyFileInput { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="icon-btn" onclick="history.back()"><i class="fas fa-arrow-right"></i></button>
+    <h2>ملفي الشخصي</h2>
+    <button class="icon-btn" onclick="window.location.href='settings.html'"><i class="fas fa-cog"></i></button>
+</div>
+
+<div class="profile-container" id="profileContent">
+    <div class="empty-state"><i class="fas fa-spinner fa-pulse"></i><p>جاري تحميل ملفك...</p></div>
+</div>
+
+<input type="file" id="storyFileInput" accept="image/*" onchange="uploadStory()">
+
+<div class="bottom-footer">
+    <a href="home.html" class="footer-button"><i class="fas fa-home icon"></i><div class="label">الصفحة الرئيسية</div></a>
+    <a href="explore.html" class="footer-button"><i class="fas fa-compass icon"></i><div class="label">استكشاف</div></a>
+    <a href="create-post.html" class="footer-button create-btn"><i class="fas fa-plus-circle icon"></i><div class="label">إنشاء</div></a>
+    <a href="inbox.html" class="footer-button"><i class="fas fa-inbox icon"></i><div class="label">صندوق الوارد</div></a>
+    <a href="profile.html" class="footer-button" style="color:var(--accent)"><i class="fas fa-user icon"></i><div class="label">الملف الشخصي</div></a>
+</div>
+
+<script>
+    const currentUser = getCurrentUser();
+    if (!currentUser) window.location.href = 'login.html';
+
+    async function loadMyProfile() {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        if (error || !user) {
+            document.getElementById('profileContent').innerHTML = '<div class="empty-state">تعذر تحميل الملف</div>';
+            return;
+        }
+
+        // إحصائيات
+        const [postsRes, followersRes, followingRes] = await Promise.all([
+            supabase.from('posts').select('*', { count: 'exact' }).eq('author_id', currentUser.id).eq('hidden', false),
+            supabase.from('follows').select('*', { count: 'exact' }).eq('following_id', currentUser.id),
+            supabase.from('follows').select('*', { count: 'exact' }).eq('follower_id', currentUser.id)
+        ]);
+
+        // قصصي الحقيقية
+        const { data: stories } = await supabase
+            .from('stories')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        // روابطي
+        const { data: links } = await supabase
+            .from('user_links')
+            .select('*')
+            .eq('user_id', currentUser.id);
+
+        const container = document.getElementById('profileContent');
+        container.innerHTML = `
+            <div class="cover-section">
+                <img class="cover-image" src="${user.cover || 'https://via.placeholder.com/600x180/1a1a1a/aaaaaa?text=Ramz-X'}" alt="غلاف">
+            </div>
+            <div class="avatar-section">
+                <img class="avatar" src="${user.avatar || 'https://randomuser.me/api/portraits/lego/5.jpg'}" alt="صورتي">
+            </div>
+            <div class="profile-details">
+                <div class="username">${user.verified ? '<i class="fas fa-check-circle" style="color:var(--accent-blue);"></i> ' : ''}${escapeHtml(user.username)}</div>
+                <div class="full-name">${escapeHtml(user.full_name || '')}</div>
+                <div class="bio">${escapeHtml(user.bio || 'لم تقم بكتابة نبذة بعد.')}</div>
+                <div class="stats">
+                    <div class="stat"><div class="stat-number">${formatNumber(postsRes.count||0)}</div><div class="stat-label">منشورات</div></div>
+                    <div class="stat"><div class="stat-number">${formatNumber(followersRes.count||0)}</div><div class="stat-label">متابِعون</div></div>
+                    <div class="stat"><div class="stat-number">${formatNumber(followingRes.count||0)}</div><div class="stat-label">متابَعون</div></div>
+                </div>
+                <div class="actions">
+                    <button class="primary-btn" onclick="window.location.href='edit-profile.html'"><i class="far fa-edit"></i> تعديل الملف</button>
+                </div>
+            </div>
+            ${links && links.length > 0 ? `
+            <div class="links-section">
+                ${links.map(link => `<a href="${link.url}" target="_blank" class="social-link"><i class="fab fa-${link.platform}"></i> ${link.platform}</a>`).join('')}
+            </div>` : ''}
+            <div class="stories-row" id="profileStories">
+                <div class="story-item add-story-item" onclick="document.getElementById('storyFileInput').click()">
+                    <div class="add-story-circle">+</div>
+                    <div class="story-time">أضف قصة</div>
+                </div>
+                ${stories && stories.length > 0 ? stories.map(s => `
+                <div class="story-item" onclick="viewStory('${s.image}')">
+                    <div class="story-ring"><img class="story-avatar" src="${s.image}"></div>
+                    <div class="story-time">${timeAgo(s.created_at)}</div>
+                </div>`).join('') : ''}
+            </div>
+            <div class="tabs">
+                <div class="tab active" data-tab="posts">📝 منشوراتي</div>
+                <div class="tab" data-tab="likes">❤️ أعجبتني</div>
+                <div class="tab" data-tab="favorites">⭐ مفضلتي</div>
+                <div class="tab" data-tab="reposts">🔄 معاد نشري</div>
+            </div>
+            <div class="tab-content" id="tabContent"><div class="empty-state">جاري التحميل...</div></div>
+        `;
+
+        loadTabContent('posts');
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                loadTabContent(tab.dataset.tab);
+            });
+        });
+    }
+
+    async function loadTabContent(tab) {
+        const container = document.getElementById('tabContent');
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-pulse"></i> جاري التحميل...</div>';
+        let query;
+        if (tab === 'posts') {
+            query = supabase.from('posts').select('*').eq('author_id', currentUser.id).eq('hidden', false).order('created_at', { ascending: false });
+        } else if (tab === 'likes') {
+            query = supabase.from('likes').select('post:post_id (*)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        } else if (tab === 'favorites') {
+            query = supabase.from('favorites').select('post:post_id (*)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        } else if (tab === 'reposts') {
+            query = supabase.from('posts').select('*').eq('author_id', currentUser.id).like('content', '🔄 أعاد%').order('created_at', { ascending: false });
+        }
+        const { data, error } = await query;
+        if (error || !data || data.length === 0) {
+            container.innerHTML = '<div class="empty-state">لا يوجد محتوى</div>';
+            return;
+        }
+        const posts = (tab === 'likes' || tab === 'favorites') ? data.map(d => d.post).filter(Boolean) : data;
+        container.innerHTML = posts.map(p => `
+            <div class="post-card" onclick="window.location.href='home.html'">
+                ${parseImages(p.image)[0] ? `<img class="post-image" src="${parseImages(p.image)[0]}" alt="">` : ''}
+                <div class="post-content">
+                    <div class="post-title">${escapeHtml(p.title)}</div>
+                    <div class="post-text">${escapeHtml(p.content?.substring(0, 200) || '')}</div>
+                    <div class="post-date">${timeAgo(p.created_at)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // رفع قصة جديدة
+    window.uploadStory = async function() {
+        const file = document.getElementById('storyFileInput').files[0];
+        if (!file) return;
+        const fileName = `stories/${currentUser.id}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error } = await supabase.storage
+            .from('ramz-x-images')
+            .upload(fileName, file, { upsert: true, cacheControl: '3600' });
+        if (error) {
+            showToast('فشل رفع القصة: ' + error.message, true);
+            return;
+        }
+        const { data: { publicUrl } } = supabase.storage.from('ramz-x-images').getPublicUrl(fileName);
+        await supabase.from('stories').insert({
+            user_id: currentUser.id,
+            image: publicUrl,
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 24*60*60*1000).toISOString()
+        });
+        showToast('✅ تمت مشاركة القصة');
+        document.getElementById('storyFileInput').value = '';
+        loadMyProfile(); // إعادة تحميل الملف الشخصي لظهور القصة الجديدة
+    };
+
+    window.viewStory = (img) => showToast('عرض القصة: ' + img);
+
+    loadMyProfile();
+
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') document.body.classList.remove('light');
+    else document.body.classList.add('light');
+</script>
+</body>
+</html>
