@@ -1,4 +1,7 @@
 // ==================== common.js – Ramz‑X (النسخة النهائية) ====================
+// تم تطوير هذا الملف بمساعدة رمزي الصلاحي (Ramz-X)
+// جميع الحقوق الفكرية محفوظة لمنصة Ramz-X © 2026
+// تاريخ آخر تحديث: 2026-06-06
 
 // 1. تعريف عميل Supabase
 var supabaseClient = window.supabase.createClient(
@@ -177,7 +180,7 @@ function toggleTheme() {
     return !isLight;
 }
 
-// ==================== 6. التهيئة التلقائية ====================
+// ==================== 6. التهيئة التلقائية + تسجيل Service Worker ====================
 
 document.addEventListener('DOMContentLoaded', function () {
     initTheme();
@@ -194,6 +197,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (ic) {
                 ic.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
             }
+        });
+    }
+
+    // ========== تسجيل Service Worker لتشغيل التطبيق كـ PWA ==========
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+            console.log('✅ Service Worker registered successfully with scope:', registration.scope);
+        }).catch(function(error) {
+            console.error('❌ Service Worker registration failed:', error);
         });
     }
 });
