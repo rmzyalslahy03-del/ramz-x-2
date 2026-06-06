@@ -1,0 +1,95 @@
+{
+  "name": "Ramz-X",
+  "short_name": "R-X",
+  "description": "منصة التواصل الاجتماعي Ramz-X – شارك أفكارك مع العالم",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ff0050",
+  "background_color": "#000000",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/rx-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/rx-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/rx-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/rx-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-light.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "الصفحة الرئيسية"
+    },
+    {
+      "src": "/screenshots/profile-dark.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "الملف الشخصي"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "إنشاء منشور",
+      "short_name": "نشر",
+      "description": "أنشئ منشوراً جديداً",
+      "url": "/create-post.html",
+      "icons": [{ "src": "/icons/rx-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "صندوق الوارد",
+      "short_name": "رسائل",
+      "url": "/inbox.html"
+    }
+  ],
+  "categories": ["social", "entertainment", "news"],
+  "lang": "ar",
+  "dir": "rtl",
+  "prefer_related_applications": false
+}
