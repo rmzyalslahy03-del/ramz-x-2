@@ -8,6 +8,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="common.js"></script>
+    <!-- إضافة PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff0050">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="R-X">
+    <link rel="apple-touch-icon" href="/icons/rx-192.png">
     <style>
         :root {
             --bg-primary: #000000;
@@ -81,6 +88,30 @@
             background: var(--accent); color: white; font-size: 10px;
             padding: 2px 8px; border-radius: 10px; margin-right: auto;
         }
+
+        /* زر التثبيت */
+        .install-app-btn {
+            background: linear-gradient(135deg, var(--accent), #ff3377);
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Cairo', sans-serif;
+        }
+        .install-app-btn:active { transform: scale(0.97); }
+        .install-app-btn i { font-size: 22px; }
+        .install-app-btn.hidden { display: none; }
 
         .contact-section {
             text-align: center;
@@ -182,6 +213,11 @@
             </div>
         </div>
 
+        <!-- زر تثبيت التطبيق (يظهر فقط عند إمكانية التثبيت) -->
+        <button id="installAppBtn" class="install-app-btn hidden">
+            <i class="fas fa-download"></i> تثبيت التطبيق (R‑X)
+        </button>
+
         <p style="color:var(--text-muted); font-size:12px; margin-top:20px;">
             🚀 سيتم تفعيل هذه الميزات في التحديثات القادمة من Ramz‑X
         </p>
@@ -211,6 +247,34 @@
     const saved = localStorage.getItem('darkMode');
     if (saved === 'true') document.body.classList.remove('light');
     else document.body.classList.add('light');
+
+    // ========== زر تثبيت PWA ==========
+    let deferredPrompt;
+    const installBtn = document.getElementById('installAppBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.classList.remove('hidden'); // إظهار الزر
+        console.log('beforeinstallprompt event fired');
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('✅ تم تثبيت التطبيق');
+                installBtn.classList.add('hidden');
+            } else {
+                console.log('❌ رفض التثبيت');
+            }
+            deferredPrompt = null;
+        } else {
+            // إذا لم يظهر الحدث لأي سبب، نوجه المستخدم إلى طريقة يدوية
+            alert('يمكنك تثبيت التطبيق يدويًا من خلال قائمة المتصفح → إضافة إلى الشاشة الرئيسية');
+        }
+    });
 </script>
 </body>
 </html>
